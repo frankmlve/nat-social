@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from 'react'
-import { View, SafeAreaView, Text, Modal, Button, Image, Platform, TextInput, Alert } from 'react-native'
+import { View, SafeAreaView, Text, Modal, Button, Image, Platform, TextInput, Alert, ActivityIndicator } from 'react-native'
 import { Accessory, Avatar, Card, FAB, Icon, LinearProgress } from 'react-native-elements'
 import { create } from 'ipfs-http-client'
 import * as ImagePicker from 'expo-image-picker';
 import { Camera } from 'expo-camera';
 import * as MediaLibrary from 'expo-media-library';
+import { ethers } from 'ethers'
+import axios from 'axios';
 
 import { styles } from './styles'
 
 //Declare IPFS
 const ipfs = create('https://ipfs.infura.io:5001/api/v0')
 
-export default function Profile({ route }) {
+export default function Profile({ route, navigation }) {
+
     const [userProfile, setUserProfile] = useState(null)
     const [loading, isLoading] = useState(true)
     const [buffer, setBuffer] = useState()
@@ -23,14 +26,23 @@ export default function Profile({ route }) {
     const [hasCameraPermission, setHasCameraPermission] = useState(null);
     const [editProfile, setEditProfile] = useState(false)
     const [newUsername, setNewUserName] = useState('')
+    const [newDescription, setNewDescription] = useState('')
+    const [imageProfile, setImageProfile] = useState('')
 
     useEffect(() => {
         getUser()
         getGalleryPermisson()
-    })
+    }, [])
+
     const getUser = (async () => {
         const _u = await route.params.natSocial.getUser(route.params.user)
+        if (_u.account === ethers.constants.AddressZero) {
+            // navigation.navigate('Login')
+        }
         setUserProfile(_u)
+        axios.get(`https://ipfs.infura.io/ipfs/${_u.image}`).then(res => {
+            setImageProfile(res.data)
+        })
         isLoading(false)
     })
     const getGalleryPermisson = (async () => {
@@ -54,21 +66,26 @@ export default function Profile({ route }) {
         isLoading(true)
         route.params.natSocial.userUpdate(file ? file.path : userProfile?.image ? userProfile.image : '',
             username !== '' ? username : userProfile?.username !== '' ? userProfile.username : route.params.user,
-            userProfile).then((transaction) => {
-                isLoading(false)
+            newDescription !== '' ? newDescription : userProfile?.description !== '' ? userProfile.description : '', userProfile)
+            .then((transaction) => {
+                transaction.wait(1).then(() => {
+                    getUser()
+                    isLoading(false)
+                })
             })
             .catch(err => {
                 console.log(err)
+                getUser()
                 Alert.alert(
                     "Alert Title",
                     "My Alert Msg",
                     [
-                      {
-                        text: "Cancel",
-                        onPress: () => console.log("Cancel Pressed"),
-                        style: "cancel"
-                      },
-                      { text: "OK", onPress: () => console.log("OK Pressed") }
+                        {
+                            text: "Cancel",
+                            onPress: () => console.log("Cancel Pressed"),
+                            style: "cancel"
+                        },
+                        { text: "OK", onPress: () => console.log("OK Pressed") }
                     ]
                 )
             })
@@ -116,7 +133,7 @@ export default function Profile({ route }) {
         <SafeAreaView>
             <View style={styles.container}>
                 {loading ?
-                    <LinearProgress color='#420566' variant='indeterminate' />
+                    <ActivityIndicator color='#420566' size="large" />
                     :
                     <Card containerStyle={{ margin: 0 }}>
                         {userProfile ?
@@ -129,7 +146,7 @@ export default function Profile({ route }) {
                                         setEditProfile(true)
                                     }} />
                                 <View>
-                                    {userProfile.image !== '' ?
+                                    {imageProfile !== '' ?
                                         <Avatar
                                             onPress={() => {
                                                 setModalVisible(true)
@@ -139,7 +156,7 @@ export default function Profile({ route }) {
                                             }}
                                             rounded
                                             size="large"
-                                            source={{ uri: `https://ipfs.infura.io/ipfs/${userProfile.image}` }} >
+                                            source={{ uri: imageProfile }} >
                                             <Accessory />
                                         </Avatar>
                                         :
@@ -157,9 +174,13 @@ export default function Profile({ route }) {
                                         </Avatar>
                                     }
                                     {editProfile ?
-                                        <>
-                                            <TextInput placeholder={userProfile.username}
-                                                onChangeText={(value) => setNewUserName(value)} />
+                                        <View style={{ flex: 1 }}>
+                                            <>
+                                                <TextInput placeholder={userProfile.username}
+                                                    onChangeText={(value) => setNewUserName(value)} />
+                                                <TextInput placeholder={userProfile.description}
+                                                    onChangeText={(value) => setNewDescription(value)} />
+                                            </>
                                             <Icon name='save'
                                                 containerStyle={{ alignSelf: 'flex-end' }}
                                                 color='#BF2025'
@@ -169,12 +190,14 @@ export default function Profile({ route }) {
                                                     setEditProfile(false)
                                                     updateUser(newUsername)
                                                 }} />
-                                        </>
+                                        </View>
                                         :
-                                        <Text style={styles.mainText}>{userProfile.username}</Text>
-
+                                        <View>
+                                            <Text style={styles.mainText}>{userProfile.username}</Text>
+                                            <Text style={styles.altText}>{userProfile.description}</Text>
+                                        </View>
                                     }
-                                    <Text style={styles.altText} >{userProfile.author}</Text>
+                                    <Text style={styles.altText} >{userProfile.account}</Text>
                                 </View>
                             </View>
                             :

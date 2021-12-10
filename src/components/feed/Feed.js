@@ -1,5 +1,5 @@
 import React, { Component, useEffect, useState, useRef } from 'react'
-import { Image, View, Dimensions, TouchableOpacity, TextInput, FlatList, ScrollView, SafeAreaView, RefreshControl } from 'react-native'
+import { Image, View, Dimensions, TouchableOpacity, TextInput, FlatList, ScrollView, SafeAreaView, RefreshControl, ActivityIndicator } from 'react-native'
 import { ethers } from 'ethers'
 import { create } from 'ipfs-http-client'
 import detectEthereumProvider from '@metamask/detect-provider'
@@ -193,7 +193,8 @@ function Feed(props) {
                 : null
               }
               {loading ?
-                <LinearProgress color='primary' value={1} />
+                
+                <ActivityIndicator color='#420566' size="large" />
                 : null
               }
               <View style={{ flexDirection: "row", justifyContent: 'center', alignItems: 'center', marginBottom: 10, paddingHorizontal: 10 }}>

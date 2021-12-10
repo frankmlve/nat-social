@@ -9,6 +9,8 @@ contract SocialNetwork {
     uint256 private likesCount = 0;
     uint256 private commentCount = 0;
     uint256 private filesCount = 0;
+    uint256 private userCount = 0;
+    uint256 private followedCount = 0;
     address[]  usersAddress;
 
     mapping(uint256 => Post) private posts;
@@ -16,20 +18,30 @@ contract SocialNetwork {
     mapping(uint256 => Like) private likes;
     mapping(uint256 => Comment) private comments;
     mapping(uint256 => File[]) private files;
+    mapping(uint256 => Followed) private followed;
 
 
     struct User {
+        uint256 id;
         string image;
         string username;
         string description;
         address payable account;
+        uint256 createDate;
     }
-
+    struct Followed {
+        uint256 followerId;
+        User _followed;
+    }
+    struct FollowedUserPosts {
+        AllPostInfo[] _followedUsersPosts;
+    }
     struct Comment {
         User user;
         string comment;
         uint256 postId;
         uint256 id;
+        uint256 commentDate;
     }
     struct AllPostInfo {
         Post post;
@@ -46,6 +58,7 @@ contract SocialNetwork {
         uint256 id;
         string description;
         User author;
+        uint256 postDate;
     }
     struct Like {
         uint256 postId;
@@ -53,12 +66,15 @@ contract SocialNetwork {
     }
 
     event UserCreated(
+        uint256 _userId,
         string hash,
         string username,
         string description,
-        address payable author
+        address payable author,
+        uint256 createDate
     );
     event UserUpdate(
+        uint256 _userId,
         string hash,
         string username,
         string description,
@@ -68,14 +84,16 @@ contract SocialNetwork {
     event PostCreated(
         uint256 id,
         string description,
-        User author
+        User author,
+        uint256 postDate
     );
 
     event PostCommented(
         uint256 id,
         uint256 postId,
         string comment,
-        User user
+        User user,
+        uint256 commentDate
     );
     event PostLiked(
         uint256 imageId,
@@ -84,6 +102,10 @@ contract SocialNetwork {
     event PostUnLiked(
         uint256 imageId,
         User user
+    );
+    event NewFollowed(
+        uint256 _userId,
+        User _user
     );
     constructor() {
         name = "SocialNetwork";
@@ -99,9 +121,10 @@ contract SocialNetwork {
              require(keccak256(abi.encodePacked(_username)) != keccak256(abi.encodePacked(users[usersAddress[i]].username)), "Username already exist, try another one");
              require(_account != users[usersAddress[i]].account, "You already have an account");
         }
-        users[_account] = User(_profileImg, _username, _description, payable(_account));
+        userCount++;
+        users[_account] = User(userCount, _profileImg, _username, _description, payable(_account), block.timestamp);
         usersAddress.push(_account);
-        emit UserCreated(_profileImg, _username, _description, payable(_account));
+        emit UserCreated(userCount, _profileImg, _username, _description, payable(_account), block.timestamp);
     }
     function userUpdate(
         string memory _profileImgHash,
@@ -114,8 +137,8 @@ contract SocialNetwork {
                 require(keccak256(abi.encodePacked(_username)) != keccak256(abi.encodePacked(users[usersAddress[i]].username)), "Username already exist, try another one");
             }
         }
-        users[author.account] = User(_profileImgHash, _username, _description, author.account);
-        emit UserUpdate(_profileImgHash, _username, _description, author.account);
+        users[author.account] = User(author.id, _profileImgHash, _username, _description, author.account, block.timestamp);
+        emit UserUpdate(author.id, _profileImgHash, _username, _description, author.account);
     }
     function deleteUser(address _account) public {
         require(msg.sender != address(0));
@@ -144,7 +167,7 @@ contract SocialNetwork {
                 return users[usersAddress[i]];
             }
         }
-        return User('','','', payable(address(0)));
+        return User(0,'','','', payable(address(0)),0);
     }
 
     //Handling posts
@@ -164,12 +187,13 @@ contract SocialNetwork {
         for (uint i = 0; i < _files.length; i ++){
             addFileToPost(_files[i], postCount);
         }
-        posts[postCount] = Post(postCount, _description, _user);
+        posts[postCount] = Post(postCount, _description, _user, block.timestamp);
         // Trigger an event
         emit PostCreated(
             postCount,
             _description,
-            _user
+            _user,
+            block.timestamp
         );
     }
     function addFileToPost(File memory _files, uint256 _postId) private {
@@ -191,12 +215,13 @@ contract SocialNetwork {
         require(_id > 0 && _id <= postCount);
        //Adding new comment
         commentCount++;
-        comments[commentCount] = Comment(user, _comment, _id, commentCount);
+        comments[commentCount] = Comment(user, _comment, _id, commentCount, block.timestamp);
         emit PostCommented(
             commentCount,
             _id,
             _comment,
-            user
+            user,
+            block.timestamp
         );
     }
     function deleteComment(uint256 id) public {
@@ -278,5 +303,35 @@ contract SocialNetwork {
                     postFiles = (files[_postId]);            
         }
         return postFiles;
+    }
+    function follow(uint256 _userId, User memory user) public payable {
+        require(_userId > 0 && _userId <= userCount);
+        Followed[] memory _lList = getUserFollowed(_userId);
+        for (uint i = 0; i < _lList.length; i++){
+            require(keccak256(abi.encodePacked(user.account)) != keccak256(abi.encodePacked(_lList[i]._followed.account)));
+        }
+        followedCount++;
+        followed[followedCount] = Followed(_userId, user);
+        emit NewFollowed(_userId, user);
+    }
+    function getUserFollowed(uint256 _userId) public view returns (Followed[] memory) {
+        require(_userId > 0 && _userId <= userCount);
+        Followed[] memory _followed = new Followed[](followedCount);
+        for (uint i = 0; i < _followed.length; i++){
+            if (_userId == followed[i+1].followerId){
+                _followed[i]= followed[i+1];
+            }
+        }
+        return _followed;
+    }
+    function getFollowedUsersPosts(uint256 _userId) public view returns (FollowedUserPosts[] memory){
+        require(_userId > 0 && _userId <= userCount);
+        FollowedUserPosts[] memory _allPosts = new FollowedUserPosts[](postCount);
+        Followed[] memory _followed = getUserFollowed(_userId);
+        for (uint i= 0; i < _followed.length; i++){
+            AllPostInfo[] memory _followedPost = getPostsByUserAddress(_followed[i]._followed.account);
+            _allPosts[i]._followedUsersPosts = _followedPost;
+        }
+        return _allPosts;
     }
 }

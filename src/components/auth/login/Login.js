@@ -13,7 +13,7 @@ export default function Login({ data, buttonDisabled, navigation, natSocial }) {
             </View>
             <Divider/>
             <View>
-                <Button title={'Create a new account'} type='clear' onPress={() => navigation.navigate('Register', {natSocial})}> </Button>
+                <Button title={'Create a new account'} type='clear' onPress={() => navigation.navigate('Register', {natSocial: natSocial})}> </Button>
             </View>
         </Card>
     </SafeAreaView>

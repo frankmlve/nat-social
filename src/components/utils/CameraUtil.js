@@ -56,7 +56,7 @@ export default function CameraUtil({modalVisible, setModalVisible, setBuffer, sa
 
                 const file = [new File([photo.uri], 'profile-image' + '.' + type.split('/')[1], { type })]
 
-                setBuffer([file])
+                setBuffer(file)
                 setImagePreview(photo.uri)
             })
         }
@@ -88,7 +88,6 @@ export default function CameraUtil({modalVisible, setModalVisible, setBuffer, sa
                 <View style={styles.cameraContainer}>
                     <Camera
                         ref={ref => setCamera(ref)}
-                        // style={styles.fixedRatio}
                         type={type}
                         ratio={'1:1'} />
                     <Icon

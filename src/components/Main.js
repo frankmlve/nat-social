@@ -8,19 +8,27 @@ import TestCoin from '../abis/TestCoin.json'
 
 import FeedScreen from './feed/Feed'
 import ProfileScreen from './profile/Profile';
-import { Button, Text, View } from 'react-native'
+import { ActivityIndicator, Button, Text, View } from 'react-native'
 import { LinearProgress } from 'react-native-elements'
 import AuthNavigator from '../navigation/AuthNavigator'
 import { NavigationContainer } from '@react-navigation/native'
 
 const Tab = createMaterialBottomTabNavigator();
 
+const EmptyScreen = () => {
+    return (null)
+}
 class Main extends Component {
 
     async componentDidMount() {
         await this.getNetworkData()
         await this.getUserAccount()
-        // window.ethereum.on('accountsChanged', this.loadBlockchainData());
+        window.ethereum.on('accountsChanged', function (accounts) {
+            console.log(accounts)
+        });
+        ethereum.on('disconnect', function (accounts) {
+            console.log(accounts)
+        });
     }
     getUserAccount() {
         this.setState({ buttonDisabled: true })
@@ -63,7 +71,7 @@ class Main extends Component {
             const provider = new ethers.providers.Web3Provider(window.ethereum)
             const contract = new ethers.Contract(networkData.address, SocialNetwork.abi, signer)
             const coin = new ethers.Contract(TestCoin.networks[networkID].address, TestCoin.abi, signer)
-            this.setState({ natSocial: contract, coin, provider, networkID})
+            this.setState({ natSocial: contract, coin, provider, networkID })
         } else {
             window.alert('socialNetwork contract not deployed to detected network.')
         }
@@ -89,11 +97,10 @@ class Main extends Component {
     render() {
         if (this.state.loading) {
             return (
-                <LinearProgress color='#420566' variant='indeterminate' />
+                <ActivityIndicator color='#420566' size="large" />
             )
         }
-        if (!this.state.login) {
-            console.log(this.state.natSocial)
+        if (!this.state.login || this.state.user?.account === ethers.constants.AddressZero) {
             return (
                 <AuthNavigator
                     natSocial={this.state.natSocial}
@@ -115,28 +122,21 @@ class Main extends Component {
                         ),
                         headerShown: false
                     }}></Tab.Screen>
-                <Tab.Screen name="Profile"
-                    listeners={({ navigation }) => ({
-                        tabPress: event => {
-                            event.preventDefault();
-                            navigation.navigate("Profile", { user: this.state.account, natSocial: this.state.natSocial })
-                        }
-                    })}
-                    component={ProfileScreen}
-                    options={{
-                        tabBarIcon: (({ color, size }) =>
-                            <MaterialCommunityIcons name="account" color={color} size={26} />
-                        ),
-                        headerShown: false
-                    }}></Tab.Screen>
-                {/* <Tab.Screen name="Profile" component={ProfileScreen} navigation={this.props.navigation}
-                    options={{
-                        tabBarIcon: (({ color, size }) =>
-                            <MaterialCommunityIcons name="account" color={color} size={26} />
-                        ),
-                        headerShown: false
-                    }}></Tab.Screen> */}
-                {/*<Tab.Screen name="MainAdd" component={EmptyScreen}
+                    <Tab.Screen name="Profile"
+                        listeners={({ navigation }) => ({
+                            tabPress: event => {
+                                event.preventDefault();
+                                navigation.navigate("Profile", { user: this.state.account, natSocial: this.state.natSocial })
+                            }
+                        })}
+                        component={ProfileScreen}
+                        options={{
+                            tabBarIcon: (({ color, size }) =>
+                                <MaterialCommunityIcons name="account" color={color} size={26} />
+                            ),
+                            headerShown: false
+                        }}></Tab.Screen>
+                        <Tab.Screen name="MainAdd" component={EmptyScreen}
                     listeners={({ navigation }) => ({
                         tabPress: event => {
                             event.preventDefault();
@@ -149,6 +149,14 @@ class Main extends Component {
                         ),
                         headerShown: false
                     }}></Tab.Screen>
+                {/* <Tab.Screen name="Profile" component={ProfileScreen} navigation={this.props.navigation}
+                    options={{
+                        tabBarIcon: (({ color, size }) =>
+                            <MaterialCommunityIcons name="account" color={color} size={26} />
+                        ),
+                        headerShown: false
+                    }}></Tab.Screen> */}
+                {/*
  
                 <Tab.Screen name="BSC Bank"
                     listeners={({ navigation }) => ({
