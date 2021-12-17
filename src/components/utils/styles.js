@@ -1,9 +1,11 @@
-import { StyleSheet } from "react-native";
+import { Dimensions, StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({
     cameraContainer: {
         flex: 1,
-        flexDirection: 'row'
+        flexDirection: 'row',
+        width: Dimensions.get('window').width,
+        height: Dimensions.get('window').height
     },
     closeButton: {
         alignSelf: 'flex-end',
@@ -26,6 +28,21 @@ const styles = StyleSheet.create({
         transform: [{ translateX: '-50%' }]
         // right: '50%'
 
+    },
+    takeVideo: {
+        position: 'absolute',
+        zIndex: 5,
+        bottom: 0,
+        // transform: [{ translateX: '-50%' }]
+        right: '25%'
+
+    },
+    menu: {
+        
+        position: 'absolute',
+        zIndex: 5,
+        botton: 5,
+        left: 5
     }
 })
 export {styles};

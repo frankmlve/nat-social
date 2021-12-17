@@ -140,7 +140,7 @@ class Main extends Component {
                     listeners={({ navigation }) => ({
                         tabPress: event => {
                             event.preventDefault();
-                            navigation.navigate("Add")
+                            navigation.navigate("Add", { user: this.state.user, natSocial: this.state.natSocial})
                         }
                     })}
                     options={{

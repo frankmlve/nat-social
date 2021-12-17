@@ -99,7 +99,6 @@ export default function Profile({ route, navigation }) {
             quality: 1
         });
 
-        console.log(result);
         const code = result.uri.substring(result.uri.indexOf(',') + 1)
         const type = result.uri.substring(result.uri.indexOf(":") + 1, result.uri.indexOf(";"));
 

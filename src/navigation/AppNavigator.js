@@ -3,6 +3,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import Main from '../components/Main';
 import Profile from '../components/profile/Profile';
 import AddScreen from '../components/add/Add'
+import Edit from '../components/edit/Edit';
 
 const Stack = createStackNavigator();
 const AppNavigator = ({ navigation }) => (
@@ -14,7 +15,7 @@ const AppNavigator = ({ navigation }) => (
         <Stack.Screen name="Profile" component={Profile} options={{
             headerShown: false
         }} navigation={navigation}></Stack.Screen>
-
+        <Stack.Screen name='Edit' component={Edit} navigation={navigation}></Stack.Screen>
     </Stack.Navigator>
 )
 export default AppNavigator
